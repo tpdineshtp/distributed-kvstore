@@ -37,6 +37,21 @@ var Utility = {
     random: function(min, max) {
         return Math.floor((Math.random() * (max - min) % (max-min))) + min;
     },
+    hash: function(key) {
+        if (!key) {
+            throw Error("ArgumentException");
+        }
+
+        var hash = 0
+        for (i = 0; i < key.length; i++) {
+            if (key[i].charCodeAt(0) < 97) {
+                hash += (key[i].charCodeAt(0) - 48);
+            } else {
+                hash += ((key[i].charCodeAt(0) - 97) + 10);
+            }
+        }
+        return hash;
+    },
 
     shuffle: function(array) {
         var currentIndex = array.length, temporaryValue, randomIndex;
