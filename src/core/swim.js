@@ -1,11 +1,6 @@
 const express = require('express')
 const sprintf = require('sprintf').sprintf;
-const Utility = require('./utility.js');
-
-var NodeStateEnum = {
-    Active: "active",
-    Suspicious: "suspicious"
-}
+const Utility = require('../helpers/utility.js');
 
 var SWIM = function(app, port, joincb) {
     var $this = this;
@@ -17,7 +12,7 @@ var SWIM = function(app, port, joincb) {
     this.list = {};
 
     var createListEntry = (heartbeat, timestamp, status) => {
-        if (!status) status = NodeStateEnum.Active;
+        if (!status) status = "active";
 
         return {
             heartbeat: heartbeat,
@@ -73,7 +68,7 @@ var SWIM = function(app, port, joincb) {
             port = parseInt(port)
 
             if (!(port in $this.list)) {
-                if (newlist[port].status == NodeStateEnum.Active) {
+                if (newlist[port].status == "active") {
                     $this.addToList(port, newlist[port].heartbeat);
                 }
             }
@@ -83,12 +78,11 @@ var SWIM = function(app, port, joincb) {
     this.sendPing = (_res = null, receiverPort = 0) => {
         this.updateMyHeartbeat();
 
-
         if (receiverPort > 0) {
             Utility.send(
                 receiverPort,
                 "m/PING?port=" +this.port,
-                Utility.RequestTypes.POST,
+                "POST",
                 { list: $this.list },
                 function (resp, body) {
                     if (_res != null) {
@@ -105,12 +99,11 @@ var SWIM = function(app, port, joincb) {
     }
 
     this.sendJoinReq = (receiverPort) => {
-        console.log(sprintf("#%s joinreq to #%s", this.port, receiverPort))
 
         Utility.send(
             receiverPort,
             "m/JOINREQ",
-            Utility.RequestTypes.GET,
+            "GET",
             sprintf("port=%d&heartbeat=%s", this.port, Utility.getTimestamp()),
             function(resp, body) {
                 try {

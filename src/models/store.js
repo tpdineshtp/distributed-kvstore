@@ -1,6 +1,6 @@
-const Utility = require('./Utility.js')
+const Utility = require('../helpers/Utility.js')
 
-var Datastore = function() {
+var KVstore = function() {
     var store = {}
 
     this.set = function(key, value, timestamp = null) {
@@ -22,4 +22,4 @@ var Datastore = function() {
     }
 }
 
-module.exports = Datastore;
+module.exports = KVstore;

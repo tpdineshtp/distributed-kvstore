@@ -3,12 +3,6 @@ const sha1 = require('sha1');
 const sprintf = require('sprintf').sprintf;
 
 var Utility = {
-    RequestTypes: {
-        POST: "POST",
-        GET: "GET",
-        DELETE: "DELETE"
-    },
-
     send: function(port, path, type, object, callback, errcallback) {
 
         var url = sprintf("http://localhost:%d/%s", port, path);
@@ -34,13 +28,7 @@ var Utility = {
         return (new Date()).getTime();
     },
 
-    random: function(min, max) {
-        return Math.floor((Math.random() * (max - min) % (max-min))) + min;
-    },
     hash: function(key) {
-        if (!key) {
-            throw Error("ArgumentException");
-        }
 
         var hash = 0
         for (i = 0; i < key.length; i++) {
@@ -53,40 +41,14 @@ var Utility = {
         return hash;
     },
 
-    shuffle: function(array) {
-        var currentIndex = array.length, temporaryValue, randomIndex;
-
-        while (0 !== currentIndex) {
-            if (Math.random() > 0.5) continue;
-
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
-        }
-
-        tmp = []
-        array.forEach(function(a) {tmp.push(a)})
-        return tmp;
-    },
-
-    hashPort: function(port) {
+    getId: function(port) {
         return port - 8080;
     },
 
-    hashKey: function(key, max, maxReplicas) {
+    hashKey: function(key, max) {
 
         var indexes = [];
-        if (max < maxReplicas) {
-            for(i = 0; i < max; i++) indexes.push(i);
-        } else {
-            var _hash = this.hash(sha1(key));
-            for (i = 0; i < maxReplicas; i++) {
-                indexes.push((_hash + i) % max);
-            }
-        }
+        for(i = 0; i < max; i++) indexes.push(i);
         return indexes;
     },
 }

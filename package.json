@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "description": "a distributed key value store",
   "main": "index.js",
+  "scripts":{
+    "start":"start cmd /C  node src/index.js 8080 && start cmd /C  node src/index.js 8081 8080"
+  },
   "author": "tpdineshtp@gmail.com",
   "license": "MIT",
   "dependencies": {

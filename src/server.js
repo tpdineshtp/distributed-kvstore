@@ -1,7 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const sprintf = require('sprintf').sprintf;
-const Topology = require('./topology.js')
+const Topology = require('./core/topology.js')
 
 var Server = function(port, liveProcess) {
     var $this = this;

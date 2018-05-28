@@ -1,39 +1,36 @@
 const express = require('express')
-const sprintf = require('sprintf').sprintf;
 const SWIM = require('./swim.js')
-const Datastore = require('./datastore.js')
-const Utility = require('./utility.js')
+const KVstore = require('../models/store.js')
+const Utility = require('../helpers/utility.js')
 
-var Topology = function(app, port, liveProcess = null) {
-    this.app = app;
+var Topology = function(app, port, extProcess = null) {
     this.port = port;
-    this.datastore = new Datastore()
-    this.maxReplicas = 3;
 
-    var $this = this;
-    var id = Utility.hashPort(this.port);
-    var list = [id];
-    var listPortMapping = {};
+    var $this = this,
+        id = Utility.getId(this.port),
+        list = [id],
+        listPortMapping = {};
     listPortMapping[id] = this.port;
 
 
     var joinProcess = (joinPort) => {
-        console.log("Topology Initiated with: ", joinPort)
-        var joinPortId = Utility.hashPort(joinPort);
+        var joinPortId = Utility.getId(joinPort);
         listPortMapping[joinPortId] = joinPort;
         list.push(joinPortId);
     }
 
     this.swim = new SWIM(app, port, joinProcess);
-    if (liveProcess) {
-        this.swim.sendJoinReq(liveProcess);
+    if (extProcess) {
+        this.swim.sendJoinReq(extProcess);
     }
 
+    this.app = app;
+    this.kvstore = new KVstore()
     this.app.get('/d/read', (req, res) => {
         var key = req.query.key;
-        console.log(sprintf("dREAD: %s", key));
+        console.log("READ: "+ key);
 
-        res.json({value: $this.datastore.get(key)});
+        res.json({value: $this.kvstore.get(key)});
     })
 
     this.app.post('/d/write', (req, res) => {
@@ -41,10 +38,10 @@ var Topology = function(app, port, liveProcess = null) {
         var value = req.body.value;
         var timestamp = req.body.timestamp;
 
-        console.log(sprintf("dWRITE: %s, val: %s", key, value));
+        console.log("WRITE: "+key+", val: "+ value);
 
         try {
-            $this.datastore.set(key, value, timestamp);
+            $this.kvstore.set(key, value, timestamp);
         } catch (ex) {
             console.log(ex);
         }
@@ -52,28 +49,30 @@ var Topology = function(app, port, liveProcess = null) {
     });
 
     this.get = (key, callback) => {
-        var indexes = Utility.hashKey(key, list.length, this.maxReplicas);
+        var indexes = Utility.hashKey(key, list.length);
         var responses = [];
 
         var responseCallback = () => {
             if (responses.length != indexes.length) return;
-
-            var val = null, positiveCount = 0;
+            var val = null;
             responses.forEach((response) => {
-
                 if (response != null && response.value != null) {
-                    ++positiveCount;
                     val = response;
                 }
             });
-            callback(val.value);
+            if(val){
+              callback(val.value);
+            }
+            else {
+              callback(val);
+            }
         }
 
         indexes.forEach((index) => {
             var port = listPortMapping[list[index]];
             if (port == $this.port) {
                 responses.push({
-                    value: $this.datastore.get(key),
+                    value: $this.kvstore.get(key),
                     by: port
                 });
                 responseCallback();
@@ -81,8 +80,8 @@ var Topology = function(app, port, liveProcess = null) {
                 Utility.send(
                     port,
                     "d/read",
-                    Utility.RequestTypes.GET,
-                    sprintf("key=%s", key),
+                    "GET",
+                    "key="+key,
                     function(resp, body) {
                         try {
                             responses.push({
@@ -103,24 +102,16 @@ var Topology = function(app, port, liveProcess = null) {
     }
 
     this.set = (key, value, callback) => {
-        var indexes = Utility.hashKey(key, list.length, this.maxReplicas);
+        var indexes = Utility.hashKey(key, list.length);
         var responses = [];
-
-        var responseCallback = function() {
-            if (responses.length != indexes.length) return;
-            var positiveCount = 0;
-            responses.forEach(function(response) {
-                if (response) positiveCount++;
-            });
-            callback(null);
-        }
 
         indexes.forEach(function(index) {
             var port = listPortMapping[list[index]];
             if (port == $this.port) {
-                $this.datastore.set(key, value);
+                $this.kvstore.set(key, value);
                 responses.push(true);
-                responseCallback();
+                if (responses.length != indexes.length) return;
+                callback(null);
             } else {
                 Utility.send(
                     port,
@@ -129,10 +120,11 @@ var Topology = function(app, port, liveProcess = null) {
                     {key: key, value: value, timestamp: Utility.getTimestamp()},
                     function(resp, body) {
                         responses.push(true);
-                        responseCallback();
+                        if (responses.length != indexes.length) return;
+                        callback(null);
                     }, function(err) {
                         responses.push(false);
-                        responseCallback();
+                        callback(null);
                     }
                 );
             }
