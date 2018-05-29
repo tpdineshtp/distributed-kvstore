@@ -12,7 +12,7 @@ var Topology = function(app, port, extProcess = null) {
         listPortMapping = {};
     listPortMapping[id] = this.port;
 
-
+    //to perform when a new member joins
     var joinProcess = (joinPort) => {
         var joinPortId = Utility.getId(joinPort);
         listPortMapping[joinPortId] = joinPort;
@@ -77,9 +77,9 @@ var Topology = function(app, port, extProcess = null) {
                 });
                 responseCallback();
             } else {
+                var url = "http://localhost:"+port+"/d/read";
                 Utility.send(
-                    port,
-                    "d/read",
+                    url,
                     "GET",
                     "key="+key,
                     function(resp, body) {
@@ -113,9 +113,9 @@ var Topology = function(app, port, extProcess = null) {
                 if (responses.length != indexes.length) return;
                 callback(null);
             } else {
+                var url = "http://localhost:"+port+"/d/write";
                 Utility.send(
-                    port,
-                    "d/write",
+                    url,
                     "POST",
                     {key: key, value: value, timestamp: Utility.getTimestamp()},
                     function(resp, body) {

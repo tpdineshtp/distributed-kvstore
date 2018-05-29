@@ -1,6 +1,5 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const sprintf = require('sprintf').sprintf;
 const Topology = require('./core/topology.js')
 
 var Server = function(port, liveProcess) {
@@ -13,7 +12,8 @@ var Server = function(port, liveProcess) {
         extended: true
     }));
 
-    function initializeListeners() {
+    function initializeRoutes() {
+        //to get value for the given key
         app.get('/s/key', function(req, res) {
             topology.get(req.query.key, function(value) {
                 if (!value) {
@@ -24,6 +24,7 @@ var Server = function(port, liveProcess) {
             });
         });
 
+        //to post the key to kv store
         app.post('/s/key', function(req, res) {
             topology.set(req.body.key, req.body.value, function(err) {
                 if (err) {
@@ -37,14 +38,15 @@ var Server = function(port, liveProcess) {
 
     this.bind = function(callback) {
         app.listen(port, function () {
-            console.log(sprintf("Listening to port: %d", port))
+            console.log("Listening to port: "+port)
             if (callback) callback();
         });
     };
 
+    // Initialize the process - bind to the port
     this.bind(function() {
         topology = new Topology(app, port, liveProcess);
-        initializeListeners();
+        initializeRoutes();
     });
 
     this.getApp = function() {

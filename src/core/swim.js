@@ -1,5 +1,4 @@
 const express = require('express')
-const sprintf = require('sprintf').sprintf;
 const Utility = require('../helpers/utility.js');
 
 var SWIM = function(app, port, joincb) {
@@ -11,9 +10,9 @@ var SWIM = function(app, port, joincb) {
 
     this.list = {};
 
+    // returns the details to set heartbeat for each port
     var createListEntry = (heartbeat, timestamp, status) => {
         if (!status) status = "active";
-
         return {
             heartbeat: heartbeat,
             timestamp: timestamp,
@@ -21,6 +20,7 @@ var SWIM = function(app, port, joincb) {
         };
     }
 
+    // assigns hearbeat values for each port
     this.addToList = (port, heartbeat) => {
         this.list[port] = createListEntry(heartbeat, Utility.getTimestamp());
         if (this.joincb) this.joincb(port);
@@ -30,11 +30,11 @@ var SWIM = function(app, port, joincb) {
         this.list[this.port].heartbeat = Utility.getTimestamp();
     }
 
+    // Method to  initialize listeners
     this.init = () => {
+        //to send join request
         this.app.get('/m/JOINREQ', function (req, res) {
-
             var reqPort = parseInt(req.query.port);
-
             var heartbeat = parseInt(req.query.heartbeat);
             $this.addToList(reqPort, heartbeat)
 
@@ -42,27 +42,11 @@ var SWIM = function(app, port, joincb) {
             res.json({ list: $this.list });
         });
 
-        this.app.post('/m/PING', function( req, res) {
-
-            var list = req.body.list;
-            $this.mergeList(list);
-
-            $this.updateMyHeartbeat();
-            res.json({list: $this.list})
-        });
-
-        this.app.post('/m/PINGREQ', function(req, res) {
-            var list = req.body.list;
-            $this.mergeList(list);
-
-            var target = parseInt(req.query.target);
-            $this.updateMyHeartbeat();
-            $this.sendPing(res, target);
-        });
-
         this.sendPing();
     }
 
+    // Helper method to merge an incoming membership list with
+    // self membership list
     this.mergeList = (newlist) => {
         Object.keys(newlist).forEach(function(port) {
             port = parseInt(port)
@@ -75,13 +59,14 @@ var SWIM = function(app, port, joincb) {
         });
     }
 
+    // Method to send a ping req, and ping_req req if failed
     this.sendPing = (_res = null, receiverPort = 0) => {
         this.updateMyHeartbeat();
 
         if (receiverPort > 0) {
+            var url = "http://localhost:"+receiverPort+"/m/PING?port=" +this.port
             Utility.send(
-                receiverPort,
-                "m/PING?port=" +this.port,
+                url,
                 "POST",
                 { list: $this.list },
                 function (resp, body) {
@@ -98,13 +83,13 @@ var SWIM = function(app, port, joincb) {
         }
     }
 
+    // Method to send join request to a known process
     this.sendJoinReq = (receiverPort) => {
-
+        var url = "http://localhost:"+receiverPort+"/m/JOINREQ";
         Utility.send(
-            receiverPort,
-            "m/JOINREQ",
+            url,
             "GET",
-            sprintf("port=%d&heartbeat=%s", this.port, Utility.getTimestamp()),
+            "port="+this.port+"&heartbeat="+Utility.getTimestamp(),
             function(resp, body) {
                 try {
                     $this.mergeList(JSON.parse(body)["list"]);
@@ -117,7 +102,7 @@ var SWIM = function(app, port, joincb) {
         Utility.getTimestamp(), Utility.getTimestamp());
 
     this.init();
-    console.log(sprintf("SWIM list initialized for #%d", this.port));
+    console.log("SWIM list initialized for #"+ this.port);
 };
 
 module.exports = SWIM;

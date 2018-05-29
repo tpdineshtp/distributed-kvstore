@@ -3,6 +3,7 @@ const Utility = require('../helpers/Utility.js')
 var KVstore = function() {
     var store = {}
 
+    // add an entry
     this.set = function(key, value, timestamp = null) {
         if (!timestamp) {
             timestamp = Utility.getTimestamp()
@@ -15,7 +16,8 @@ var KVstore = function() {
             timestamp: timestamp
         }
     }
-
+    
+    // get the value for the input key
     this.get = function(key) {
         if (key in store) return store[key];
         return null;
