@@ -46,6 +46,10 @@ var Server = function(port, liveProcess) {
         topology = new Topology(app, port, liveProcess);
         initializeListeners();
     });
+
+    this.getApp = function() {
+          return app;
+    }
 }
 
 module.exports = Server;
