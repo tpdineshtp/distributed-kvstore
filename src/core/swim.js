@@ -41,8 +41,6 @@ var SWIM = function(app, port, joincb) {
             $this.updateMyHeartbeat();
             res.json({ list: $this.list });
         });
-
-        this.sendPing();
     }
 
     // Helper method to merge an incoming membership list with
@@ -57,30 +55,6 @@ var SWIM = function(app, port, joincb) {
                 }
             }
         });
-    }
-
-    // Method to send a ping req, and ping_req req if failed
-    this.sendPing = (_res = null, receiverPort = 0) => {
-        this.updateMyHeartbeat();
-
-        if (receiverPort > 0) {
-            var url = "http://localhost:"+receiverPort+"/m/PING?port=" +this.port
-            Utility.send(
-                url,
-                "POST",
-                { list: $this.list },
-                function (resp, body) {
-                    if (_res != null) {
-                        return _res.json({list: $this.list, ack: true});
-                    }
-
-                    try {
-                        $this.mergeList(JSON.parse(body)["list"]);
-                        receiverPort = 0;
-                    } catch (ex) {
-                    }
-                });
-        }
     }
 
     // Method to send join request to a known process

@@ -26,12 +26,6 @@ var Topology = function(app, port, extProcess = null) {
 
     this.app = app;
     this.kvstore = new KVstore()
-    this.app.get('/d/read', (req, res) => {
-        var key = req.query.key;
-        console.log("READ: "+ key);
-
-        res.json({value: $this.kvstore.get(key)});
-    })
 
     this.app.post('/d/write', (req, res) => {
         var key = req.body.key;
@@ -49,11 +43,8 @@ var Topology = function(app, port, extProcess = null) {
     });
 
     this.get = (key, callback) => {
-        var indexes = Utility.hashKey(key, list.length);
         var responses = [];
-
         var responseCallback = () => {
-            if (responses.length != indexes.length) return;
             var val = null;
             responses.forEach((response) => {
                 if (response != null && response.value != null) {
@@ -61,6 +52,7 @@ var Topology = function(app, port, extProcess = null) {
                 }
             });
             if(val){
+              console.log("READ: "+ key);
               callback(val.value);
             }
             else {
@@ -68,37 +60,11 @@ var Topology = function(app, port, extProcess = null) {
             }
         }
 
-        indexes.forEach((index) => {
-            var port = listPortMapping[list[index]];
-            if (port == $this.port) {
-                responses.push({
-                    value: $this.kvstore.get(key),
-                    by: port
-                });
-                responseCallback();
-            } else {
-                var url = "http://localhost:"+port+"/d/read";
-                Utility.send(
-                    url,
-                    "GET",
-                    "key="+key,
-                    function(resp, body) {
-                        try {
-                            responses.push({
-                                value: JSON.parse(body).value,
-                                by: port
-                            });
-                        } catch (ex) {
-                            responses.push(null);
-                        }
-                        responseCallback();
-                    }, function(err) {
-                        responses.push(null);
-                        responseCallback();
-                    }
-                );
-            }
+        responses.push({
+            value: $this.kvstore.get(key),
+            by: port
         });
+        responseCallback();
     }
 
     this.set = (key, value, callback) => {
