@@ -2,8 +2,9 @@ const request = require('request');
 const sha1 = require('sha1');
 
 var Utility = {
-    send: function(url, type, object, callback, errcallback) {
+    send: function(port, path, type, object, callback, errcallback) {
 
+        var url = "http://localhost:"+port+"/"+path;
         var requestCallback = (err, response, body) => {
             if (err && errcallback) errcallback(err);
             if (!err && callback) callback(response, body);
@@ -21,31 +22,34 @@ var Utility = {
         }
     },
 
-    // method to get current timestamp
     getTimestamp: function() {
         return (new Date()).getTime();
     },
 
-    // Method to calculate hash count of any key
-    hash: function(key) {
-        var hash = 0
-        for (i = 0; i < key.length; i++) {
-            if (key[i].charCodeAt(0) < 97) {
-                hash += (key[i].charCodeAt(0) - 48);
-            } else {
-                hash += ((key[i].charCodeAt(0) - 97) + 10);
-            }
+    // to shuffle ports, referred https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+    shuffle: function(array) {
+        var currentIndex = array.length, temporaryValue, randomIndex;
+
+        while (0 !== currentIndex) {
+            if (Math.random() > 0.5) continue;
+
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
         }
-        return hash;
+
+        tmp = []
+        array.forEach(function(a) {tmp.push(a)})
+        return tmp;
     },
 
-    //returns unique id from the given port number.
-    //assume we always use ports greater than 8080
     getId: function(port) {
         return port - 8080;
     },
 
-    //returns the current processes
     hashKey: function(key, max) {
         var indexes = [];
         for(i = 0; i < max; i++) indexes.push(i);
