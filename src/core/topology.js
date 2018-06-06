@@ -13,7 +13,6 @@ var Topology = function(app, port, introducer = null) {
     var listPortMapping = {};
     listPortMapping[id] = this.port;
 
-
     var joinStabalisation = (joinPort, retryCount = 0) => {
         console.log("[SIN] Stabalisation (+ve): ", joinPort)
         var joinPortId = Utility.getId(joinPort);
@@ -29,7 +28,7 @@ var Topology = function(app, port, introducer = null) {
         list.splice(index, 1);
     }
 
-    this.swim = new SWIM(app, port, joinStabalisation, churnStabalisation);
+    this.swim = new SWIM(app, port, joinStabalisation, churnStabalisation, this.kvstore);
     if (introducer) {
         this.swim.sendJoinReq(introducer);
     }

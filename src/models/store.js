@@ -22,6 +22,10 @@ var KVstore = function() {
         if (key in store) return store[key];
         return null;
     }
+
+    this.getStore = function() {
+      return store;
+    }
 }
 
 module.exports = KVstore;

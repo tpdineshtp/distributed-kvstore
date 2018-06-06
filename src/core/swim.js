@@ -1,13 +1,15 @@
 const express = require('express')
 const Utility = require('../helpers/utility.js');
+const Topology = require('./topology.js');
 
-var SWIM = function(app, port, joincb, churncb) {
+var SWIM = function(app, port, joincb, churncb,kvstore) {
     var $this = this;
 
     this.app = app;
     this.port = port;
     this.joincb = joincb;
     this.churncb = churncb;
+    this.kvstore = kvstore;
 
     this.list = {};
     this.pinglist = [];
@@ -57,8 +59,8 @@ var SWIM = function(app, port, joincb, churncb) {
 
             var heartbeat = parseInt(req.query.heartbeat);
             $this.addToList(reqPort, heartbeat)
-
-            res.json({ list: $this.list });
+            res.json({ list: $this.list,
+                       kvstore: $this.kvstore.getStore()});
         });
 
         this.app.post('/m/PING', function( req, res) {
@@ -130,6 +132,12 @@ var SWIM = function(app, port, joincb, churncb) {
             function(resp, body) {
                 try {
                     $this.mergeList(JSON.parse(body)["list"]);
+                    obj = JSON.parse(body)["kvstore"];
+                    var result=[];
+                    Object.keys(obj).every((key)=> result.push(key));
+                    for(var i =0;i<result.length;i++){
+                      $this.kvstore.set(result[i], obj[result[i]].value);
+                    }
                 } catch (ex) {
                 }
             });
